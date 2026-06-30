@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ทำแบบสอบถาม - ระบบประเมินการสอน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .rating-stars .star {
+      font-size: 2rem;
+      cursor: pointer;
+      color: #D1D5DB;
+      transition: color 0.2s;
+    }
+    .rating-stars .star.active,
+    .rating-stars .star:hover {
+      color: #F59E0B;
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="container" style="max-width: 640px;">
+    <!-- Loading -->
+    <div id="survey-loading" class="loading">
+      <div class="spinner"></div>
+      <p class="mt-1">กำลังโหลดแบบสอบถาม...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="survey-error" class="hidden"></div>
+
+    <!-- Survey Form -->
+    <div id="survey-form" class="hidden">
+      <div class="text-center mb-3">
+        <h1 id="survey-title" style="font-size: 1.5rem; font-weight: 700;"></h1>
+        <p id="survey-description" class="text-muted"></p>
+        <div id="survey-instructions" class="card mb-2 text-left" style="display:none;"></div>
+      </div>
+
+      <div id="survey-container"></div>
+
+      <div class="mt-3">
+        <button class="btn btn-primary" style="width: 100%;" onclick="Survey.confirmSubmit()">ส่งคำตอบ</button>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div id="survey-success" class="hidden">
+      <div class="card text-center" style="padding: 48px 24px;">
+        <div style="font-size: 3rem; margin-bottom: 16px;">✅</div>
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-bottom: 8px;">ส่งคำตอบสำเร็จ!</h2>
+        <p class="text-muted mb-3">ขอบคุณที่ให้ความเห็น ข้อมูลของคุณมีค่าสำหรับเรา</p>
+        <a href="index.html" class="btn btn-outline">กลับหน้าแรก</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sheets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/survey.js"></script>
+  <script>
+    // ดึง code จาก URL
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    if (!code) {
+      document.getElementById('survey-loading').classList.add('hidden');
+      App.showError('survey-error', 'ไม่พบรหัสแบบสอบถาม กรุณาเข้าผ่าน link ที่ได้รับ');
+    } else {
+      Survey.loadByCode(code).then(function(result) {
+        document.getElementById('survey-loading').classList.add('hidden');
+        if (result.success) {
+          document.getElementById('survey-form').classList.remove('hidden');
+          Survey.renderSurvey();
+        } else {
+          App.showError('survey-error', result.message);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

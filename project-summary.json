@@ -1,0 +1,58 @@
+{
+  "projectName": "ระบบประเมินความพึงพอใจในการสอน",
+  "projectType": "internal-tool",
+  "outputLanguage": "thai",
+  "promptPackLevel": "standard",
+  "documentsToGenerate": [
+    "prd.md",
+    "architecture.md",
+    "rules.md",
+    "tasks.md",
+    "memory.md",
+    "design.md"
+  ],
+  "coreFeatures": [
+    "1. ผมมีความจำเป็นต้องทำการสอน หรือ แชร์ Knowledge ให้กับทีม โดยทำการสอนทุกอาทิตย์ ครั้งละ 1 ชั่วโมง ผมอยากได้ Web App สำหรับ Feedback การสอน",
+    "2. Share Material การสอน Google Drive",
+    "3. การประเมินการพึงพอใจ โดยการเก็บข้อมูลไว้ใน Google Sheets เพื่อสรุปผลในปลายปี",
+    "4. มีหน้า Dashboard ในการวิเคราะห์ ข้อมูลในแต่ละครั้งที่สอน",
+    "5. ดูภาพรวมการสอนทั้งหมด",
+    "6. มีหน้า Config การใช้ Google Sheet สำหรับ Admin",
+    "7. ผู้สอน จะต้องมีหน้า login เพื่อสร้าง Questionnaire Online เพื่อประเมินความพึงพอใจ สำหรับหัวข้ออบรมนั้น",
+    "8. ผู้อบรม ไม่ต้องมี login แต่ต้องมี Code สำหรับ วิชาการสอนครั้งนั้น ซึ่งผู้สอนจะเป็นคนสร้าง Code สำหรับ วิชานั้น",
+    "9. admin จะเป็นคน Config เพื่อเชื่อมต่อ Google Drive และ Google Sheets",
+    "10. สามารถไปรันบน netlify"
+  ],
+  "aiTargetContext": {
+    "targetProfile": {
+      "id": "codex",
+      "label": "Codex",
+      "workflowStyle": "Workspace-aware, task-driven, verification-heavy",
+      "handoffStyle": "ส่งต่องานแบบมี next-step, assumptions, verification notes และ file context ชัดเจน",
+      "promptBias": "เน้น implementation sequencing, code review mindset และ update เอกสารระหว่างทำงาน"
+    },
+    "provider": {
+      "id": "deterministic-fallback",
+      "label": "Standard Fallback",
+      "model": null,
+      "timeoutMs": null
+    }
+  },
+  "aiDocuments": [],
+  "aiQualityGate": null,
+  "aiAnalysis": null,
+  "providerDiagnosticsHistory": {
+    "entryCount": 5,
+    "latestTitle": "Provider Health Check",
+    "latestKind": "health-check",
+    "latestTimestamp": "2026-06-22T06:16:33.539Z",
+    "kinds": [
+      "health-check",
+      "analysis",
+      "export"
+    ]
+  },
+  "contextSync": null,
+  "teamTemplate": null,
+  "generatedAt": "2026-06-29T04:19:33.633Z"
+}

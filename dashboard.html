@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>รายงานผล - ระบบประเมินการสอน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="container-wide">
+    <div id="dashboard-header" class="flex justify-between items-center mb-3">
+      <h1 id="dashboard-title" style="font-size: 1.5rem; font-weight: 700;">รายงานผลการประเมิน</h1>
+      <div id="back-btn" class="hidden">
+        <a href="teacher.html" class="btn btn-outline btn-sm">← กลับไปหน้าผู้สอน</a>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="dashboard-loading" class="loading" style="padding: 60px 24px;">
+      <div class="spinner" style="width: 40px; height: 40px;"></div>
+      <p class="mt-2" style="font-size: 1.1rem;">กำลังโหลดข้อมูล...</p>
+      <p class="text-muted" style="font-size: 0.9rem;">กรุณารอสักครู่ กำลังดึงข้อมูลจาก Google Sheets</p>
+    </div>
+
+    <!-- Overview Stats -->
+    <div id="overview-stats" class="mb-3 hidden"></div>
+
+    <!-- Rating Chart -->
+    <div id="rating-chart" class="mb-3 hidden"></div>
+
+    <!-- Filter (ซ่อนเมื่อดูแบบสอบถามเดียว) -->
+    <div id="filter-container" class="card mb-3 hidden">
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>เลือกแบบสอบถาม</label>
+        <select id="filter-questionnaire" onchange="loadDashboard()">
+          <option value="">ทั้งหมด</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Questionnaires List -->
+    <div id="questionnaires-list" class="mb-3 hidden"></div>
+
+    <!-- Text Responses -->
+    <div id="text-responses" class="mb-3 hidden"></div>
+
+    <!-- Detailed Responses -->
+    <div id="responses-detail" class="hidden"></div>
+  </div>
+
+  <script src="js/sheets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/teacher.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script>
+    // ตรวจสอบ auth (admin หรือ teacher)
+    const user = Auth.getCurrentUser();
+    if (!user) {
+      // ไม่บังคับ auth สำหรับ dashboard ดูได้ผ่าน link โดยตรง
+    }
+
+    // ดึง parameter จาก URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const specificQId = urlParams.get('q');
+
+    async function loadDashboard() {
+      // แสดง loading
+      document.getElementById('dashboard-loading').classList.remove('hidden');
+
+      const filter = document.getElementById('filter-questionnaire')?.value || '';
+      const qId = specificQId || filter || null;
+
+      const { questionnaires, responses } = await Dashboard.loadData(qId);
+
+      // 填充 dropdown (เฉพาะเมื่อไม่ได้ดูแบบสอบถามเดียว)
+      if (!specificQId) {
+        const select = document.getElementById('filter-questionnaire');
+        if (select && select.options.length <= 1) {
+          const allQ = await Dashboard.loadData();
+          allQ.questionnaires.forEach(q => {
+            const opt = document.createElement('option');
+            opt.value = q.id;
+            opt.textContent = q.title;
+            select.appendChild(opt);
+          });
+          if (filter) select.value = filter;
+        }
+      }
+
+      Dashboard.renderOverview(responses);
+      Dashboard.renderQuestionnairesList(questionnaires);
+      Dashboard.renderRatingChart(responses);
+      Dashboard.renderTextResponses(responses, questionnaires);
+      Dashboard.renderResponses(responses, questionnaires);
+
+      // ซ่อน loading แล้วแสดงข้อมูล
+      document.getElementById('dashboard-loading').classList.add('hidden');
+      document.getElementById('overview-stats').classList.remove('hidden');
+      document.getElementById('rating-chart').classList.remove('hidden');
+      if (!specificQId) {
+        document.getElementById('filter-container').classList.remove('hidden');
+      }
+      document.getElementById('questionnaires-list').classList.remove('hidden');
+      document.getElementById('text-responses').classList.remove('hidden');
+      document.getElementById('responses-detail').classList.remove('hidden');
+    }
+
+    // ตั้งค่า UI สำหรับโหมดดูแบบสอบถามเดียว
+    if (specificQId) {
+      // ซ่อน filter dropdown
+      document.getElementById('filter-container').classList.add('hidden');
+      // แสดงปุ่มกลับ
+      document.getElementById('back-btn').classList.remove('hidden');
+      // โหลดข้อมูลแบบสอบถามเพื่อแสดงชื่อ
+      Dashboard.loadData(specificQId).then(({ questionnaires }) => {
+        if (questionnaires.length > 0) {
+          document.getElementById('dashboard-title').textContent = 'รายงานผล: ' + questionnaires[0].title;
+          document.title = 'รายงานผล: ' + questionnaires[0].title + ' - ระบบประเมินการสอน';
+        }
+      });
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

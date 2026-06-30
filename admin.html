@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ตั้งค่าระบบ - ระบบประเมินการสอน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="spinner" style="width: 40px; height: 40px;"></div>
+    <p class="mt-2" style="font-size: 1.1rem;">กำลังลบข้อมูล...</p>
+  </div>
+
+  <!-- Admin Login Screen -->
+  <div id="admin-login-screen" class="container" style="max-width: 420px; margin-top: 80px;">
+    <div class="card">
+      <div class="card-header text-center">🔒 เข้าสู่ระบบผู้ดูแล</div>
+      <div class="form-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="admin-password" placeholder="กรอกรหัสผ่าน admin">
+      </div>
+      <button class="btn btn-primary" style="width: 100%;" onclick="adminLogin()">เข้าสู่ระบบ</button>
+      <div id="login-error" class="mt-2 hidden"></div>
+      <div class="text-center mt-2">
+        <a href="index.html" class="text-muted" style="font-size: 0.85rem;">← กลับหน้าแรก</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Content (ซ่อนไว้ก่อน) -->
+  <div id="admin-content" class="hidden">
+    <nav class="navbar">
+      <a href="index.html" class="navbar-brand">📋 ระบบประเมินการสอน</a>
+      <nav class="navbar-nav">
+        <a href="admin.html" class="active">ตั้งค่า</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="#" id="btn-logout">ออกจากระบบ</a>
+      </nav>
+    </nav>
+
+    <div class="container-wide">
+      <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 24px;">ตั้งค่าระบบ</h1>
+
+      <div id="admin-stats" class="mb-3"></div>
+
+      <div class="card mb-3">
+        <div class="card-header">ตั้งค่า Google Sheets (ผ่าน Apps Script)</div>
+        <p class="text-muted mb-2" style="font-size: 0.9rem;">
+          วาง URL ที่ได้จาก Google Apps Script Deploy
+        </p>
+        <div class="form-group">
+          <label>Apps Script Web App URL</label>
+          <input type="text" id="cfg-script-url" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div class="mt-2">
+          <button class="btn btn-primary" onclick="saveScriptConfig()">บันทึก</button>
+          <button class="btn btn-outline" onclick="testScriptConnection()">ทดสอบการเชื่อมต่อ</button>
+        </div>
+        <div id="config-message" class="mt-2 hidden"></div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header flex justify-between items-center">
+          <span>จัดการผู้ใช้</span>
+          <button class="btn btn-primary btn-sm" onclick="showAddTeacher()">+ เพิ่มผู้สอน</button>
+        </div>
+        
+        <div id="add-teacher-form" class="hidden mb-2" style="padding: 16px; background: #F9FAFB; border-radius: 8px;">
+          <div class="form-group">
+            <label>ชื่อ</label>
+            <input type="text" id="new-teacher-name" placeholder="ชื่อ-นามสกุล">
+          </div>
+          <div class="form-group">
+            <label>อีเมล</label>
+            <input type="email" id="new-teacher-email" placeholder="teacher@email.com">
+          </div>
+          <div class="form-group">
+            <label>รหัสผ่าน</label>
+            <input type="password" id="new-teacher-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+          </div>
+          <div class="flex gap-1">
+            <button class="btn btn-primary btn-sm" onclick="addTeacher()">เพิ่ม</button>
+            <button class="btn btn-outline btn-sm" onclick="hideAddTeacher()">ยกเลิก</button>
+          </div>
+          <div id="add-teacher-msg" class="mt-2 hidden"></div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>ชื่อ</th>
+                <th>อีเมล</th>
+                <th>สถานะ</th>
+                <th>วันที่สร้าง</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card mb-3">
+        <div class="card-header">เปลี่ยนรหัสผ่าน Admin</div>
+        <div class="form-group">
+          <label>รหัสผ่านเดิม</label>
+          <input type="password" id="old-password" placeholder="กรอกรหัสผ่านเดิม">
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่านใหม่</label>
+          <input type="password" id="new-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+        </div>
+        <div class="form-group">
+          <label>ยืนยันรหัสผ่านใหม่</label>
+          <input type="password" id="confirm-password" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง">
+        </div>
+        <button class="btn btn-primary" onclick="changeAdminPassword()">เปลี่ยนรหัสผ่าน</button>
+        <div id="password-message" class="mt-2 hidden"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">ลิงก์ด่วน</div>
+        <div class="flex gap-1 flex-wrap">
+          <a href="teacher-login.html" class="btn btn-outline btn-sm">เข้าสู่ระบบผู้สอน</a>
+          <a href="dashboard.html" class="btn btn-outline btn-sm">ดู Dashboard</a>
+          <a href="index.html" class="btn btn-outline btn-sm">หน้าแรก</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sheets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    var ADMIN_PASSWORD = 'admin123';
+
+    function checkAdminAuth() {
+      var adminAuth = sessionStorage.getItem('admin_auth');
+      if (adminAuth === 'true') {
+        showAdminPanel();
+      }
+    }
+
+    function adminLogin() {
+      var pw = document.getElementById('admin-password').value;
+      var savedPw = localStorage.getItem('admin_password') || ADMIN_PASSWORD;
+      if (pw === savedPw) {
+        sessionStorage.setItem('admin_auth', 'true');
+        showAdminPanel();
+      } else {
+        App.showError('login-error', 'รหัสผ่านไม่ถูกต้อง');
+      }
+    }
+
+    function changeAdminPassword() {
+      var oldPw = document.getElementById('old-password').value;
+      var newPw = document.getElementById('new-password').value;
+      var confirmPw = document.getElementById('confirm-password').value;
+      var savedPw = localStorage.getItem('admin_password') || ADMIN_PASSWORD;
+
+      if (oldPw !== savedPw) {
+        App.showError('password-message', 'รหัสผ่านเดิมไม่ถูกต้อง');
+        return;
+      }
+      if (newPw.length < 6) {
+        App.showError('password-message', 'รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร');
+        return;
+      }
+      if (newPw !== confirmPw) {
+        App.showError('password-message', 'รหัสผ่านใหม่ไม่ตรงกัน');
+        return;
+      }
+
+      localStorage.setItem('admin_password', newPw);
+      App.showSuccess('password-message', 'เปลี่ยนรหัสผ่านสำเร็จ!');
+      document.getElementById('old-password').value = '';
+      document.getElementById('new-password').value = '';
+      document.getElementById('confirm-password').value = '';
+    }
+
+    function showAdminPanel() {
+      document.getElementById('admin-login-screen').classList.add('hidden');
+      document.getElementById('admin-content').classList.remove('hidden');
+      initAdminPanel();
+    }
+
+    document.getElementById('admin-password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') adminLogin();
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function(e) {
+      e.preventDefault();
+      sessionStorage.removeItem('admin_auth');
+      window.location.href = 'index.html';
+    });
+
+    function initAdminPanel() {
+      SheetsAPI.loadConfig();
+      if (SheetsAPI.config.scriptUrl) {
+        document.getElementById('cfg-script-url').value = SheetsAPI.config.scriptUrl;
+      }
+      Admin.renderUsersTable();
+      Admin.renderStats();
+    }
+
+    function saveScriptConfig() {
+      var url = document.getElementById('cfg-script-url').value.trim();
+      if (!url) {
+        App.showError('config-message', 'กรุณาใส่ URL');
+        return;
+      }
+      SheetsAPI.saveConfig({ scriptUrl: url });
+      App.showSuccess('config-message', 'บันทึกสำเร็จ!');
+    }
+
+    async function testScriptConnection() {
+      saveScriptConfig();
+      try {
+        var result = await SheetsAPI.readSheet('Questionnaires');
+        App.showSuccess('config-message', 'เชื่อมต่อสำเร็จ! พบข้อมูล ' + result.length + ' แถว');
+      } catch(e) {
+        App.showError('config-message', 'เชื่อมต่อไม่สำเร็จ: ' + e.message);
+      }
+    }
+
+    function showAddTeacher() {
+      document.getElementById('add-teacher-form').classList.remove('hidden');
+    }
+
+    function hideAddTeacher() {
+      document.getElementById('add-teacher-form').classList.add('hidden');
+      document.getElementById('add-teacher-msg').classList.add('hidden');
+    }
+
+    async function addTeacher() {
+      var name = document.getElementById('new-teacher-name').value.trim();
+      var email = document.getElementById('new-teacher-email').value.trim();
+      var password = document.getElementById('new-teacher-password').value;
+
+      if (!name || !email || !password) {
+        App.showError('add-teacher-msg', 'กรุณากรอกข้อมูลให้ครบทุกช่อง');
+        return;
+      }
+      if (password.length < 6) {
+        App.showError('add-teacher-msg', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+        return;
+      }
+
+      var result = await Admin.addTeacher(name, email, password);
+      if (result.success) {
+        App.showSuccess('add-teacher-msg', 'เพิ่มผู้สอนสำเร็จ!');
+        Admin.renderUsersTable();
+        document.getElementById('new-teacher-name').value = '';
+        document.getElementById('new-teacher-email').value = '';
+        document.getElementById('new-teacher-password').value = '';
+        setTimeout(hideAddTeacher, 1500);
+      } else {
+        App.showError('add-teacher-msg', result.message);
+      }
+    }
+
+    // เช็ค auth เมื่อเปิดหน้า
+    checkAdminAuth();
+  </script>
+</body>
+</html>

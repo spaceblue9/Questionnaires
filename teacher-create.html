@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>สร้างแบบสอบถาม - ระบบประเมินการสอน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="container" style="max-width: 720px;">
+    <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 24px;">สร้างแบบสอบถามใหม่</h1>
+
+    <div id="create-message" class="hidden"></div>
+
+    <div class="card mb-3">
+      <div class="card-header">ข้อมูลแบบสอบถาม</div>
+      <div class="form-group">
+        <label>ชื่อแบบสอบถาม *</label>
+        <input type="text" id="q-title" placeholder="เช่น แบบสอบถามความพึงพอใจ การอบรม React">
+      </div>
+      <div class="form-group">
+        <label>คำอธิบาย</label>
+        <textarea id="q-description" placeholder="อธิบายรายละเอียดของแบบสอบถาม (ไม่บังคับ)"></textarea>
+      </div>
+      <div class="form-group">
+        <label>คำแนะนำ / ลิงก์สื่อการสอน</label>
+        <textarea id="q-instructions" rows="3" placeholder="เช่น ลิงก์ดาวน์โหลดเอกสาร, คำอธิบายเพิ่มเติม, ลิงก์สื่อการสอน (ไม่บังคับ)"></textarea>
+      </div>
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-header">คำถาม</div>
+      <div id="questions-container">
+        <p class="text-center text-muted" style="padding: 24px;">ยังไม่มีคำถาม กดปุ่มด้านล่างเพื่อเพิ่ม</p>
+      </div>
+      <div style="padding: 0 24px 24px;">
+        <button type="button" id="btn-add" class="btn btn-primary btn-sm">+ เพิ่มคำถาม</button>
+      </div>
+    </div>
+
+    <div class="flex gap-1">
+      <button type="button" id="btn-create" class="btn btn-primary">สร้างแบบสอบถาม</button>
+      <a href="teacher.html" class="btn btn-outline">ยกเลิก</a>
+    </div>
+  </div>
+
+  <script src="js/sheets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    (function() {
+      // ตรวจสอบ login
+      var user = App.requireAuth('teacher');
+      if (!user) return;
+
+      var questions = [];
+      var nextId = 1;
+
+      function render() {
+        var container = document.getElementById('questions-container');
+        if (questions.length === 0) {
+          container.innerHTML = '<p class="text-center text-muted" style="padding: 24px;">ยังไม่มีคำถาม กดปุ่มด้านล่างเพื่อเพิ่ม</p>';
+          return;
+        }
+        var html = '';
+        for (var i = 0; i < questions.length; i++) {
+          var q = questions[i];
+          var requiredChecked = q.required !== false ? ' checked' : '';
+          html += '<div style="padding: 16px 24px; border-bottom: 1px solid #E5E7EB;">';
+          html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">';
+          html += '<strong>คำถามที่ ' + (i+1) + '</strong>';
+          html += '<button type="button" class="btn btn-danger btn-sm del-btn" data-id="' + q.id + '">ลบ</button>';
+          html += '</div>';
+          html += '<input type="text" class="q-text" data-id="' + q.id + '" value="' + (q.text || '').replace(/"/g, '&quot;') + '" placeholder="พิมพ์คำถาม..." style="width:100%; padding:8px; margin-bottom:8px; border:1px solid #E5E7EB; border-radius:8px;">';
+          html += '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">';
+          html += '<select class="q-type" data-id="' + q.id + '" style="padding:8px; border:1px solid #E5E7EB; border-radius:8px;">';
+          html += '<option value="rating"' + (q.type==='rating'?' selected':'') + '>คะแนน 1-5 ดาว</option>';
+          html += '<option value="text"' + (q.type==='text'?' selected':'') + '>ข้อความ</option>';
+          html += '<option value="yes-no"' + (q.type==='yes-no'?' selected':'') + '>ใช่ / ไม่ใช่</option>';
+          html += '<option value="choice"' + (q.type==='choice'?' selected':'') + '>เลือกจากตัวเลือก</option>';
+          html += '</select>';
+          html += '<label style="display:flex; align-items:center; gap:4px; font-size:0.9rem; white-space:nowrap;">';
+          html += '<input type="checkbox" class="q-required" data-id="' + q.id + '"' + requiredChecked + '> บังคับตอบ';
+          html += '</label>';
+          html += '</div>';
+          if (q.type === 'choice') {
+            var choices = q.choices || ['', ''];
+            html += '<div class="choice-options" data-id="' + q.id + '" style="margin-top:8px;">';
+            html += '<label style="font-size:0.9rem; color:#6B7280; margin-bottom:4px; display:block;">ตัวเลือก:</label>';
+            for (var ci = 0; ci < choices.length; ci++) {
+              html += '<div style="display:flex; gap:4px; margin-bottom:4px;">';
+              html += '<input type="text" class="q-choice" data-qid="' + q.id + '" data-ci="' + ci + '" value="' + (choices[ci] || '').replace(/"/g, '&quot;') + '" placeholder="ตัวเลือก ' + (ci+1) + '" style="flex:1; padding:6px 8px; border:1px solid #E5E7EB; border-radius:6px; font-size:0.9rem;">';
+              html += '<button type="button" class="btn btn-outline btn-sm del-choice" data-qid="' + q.id + '" data-ci="' + ci + '" style="padding:4px 8px;">x</button>';
+              html += '</div>';
+            }
+            html += '<button type="button" class="btn btn-outline btn-sm add-choice" data-qid="' + q.id + '" style="margin-top:4px;">+ เพิ่มตัวเลือก</button>';
+            html += '</div>';
+          }
+          html += '</div>';
+        }
+        container.innerHTML = html;
+      }
+
+      document.getElementById('btn-add').addEventListener('click', function() {
+        questions.push({ id: nextId++, type: 'rating', text: '', required: true, choices: ['', ''] });
+        render();
+      });
+
+      document.getElementById('questions-container').addEventListener('click', function(e) {
+        if (e.target.classList.contains('del-btn')) {
+          var id = parseInt(e.target.getAttribute('data-id'));
+          questions = questions.filter(function(q) { return q.id !== id; });
+          render();
+        }
+        if (e.target.classList.contains('add-choice')) {
+          var qid = parseInt(e.target.getAttribute('data-qid'));
+          for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === qid) {
+              if (!questions[i].choices) questions[i].choices = [];
+              questions[i].choices.push('');
+              break;
+            }
+          }
+          render();
+        }
+        if (e.target.classList.contains('del-choice')) {
+          var qid = parseInt(e.target.getAttribute('data-qid'));
+          var ci = parseInt(e.target.getAttribute('data-ci'));
+          for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === qid && questions[i].choices) {
+              questions[i].choices.splice(ci, 1);
+              break;
+            }
+          }
+          render();
+        }
+      });
+
+      document.getElementById('questions-container').addEventListener('input', function(e) {
+        if (e.target.classList.contains('q-text')) {
+          var id = parseInt(e.target.getAttribute('data-id'));
+          for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === id) questions[i].text = e.target.value;
+          }
+        }
+        if (e.target.classList.contains('q-choice')) {
+          var qid = parseInt(e.target.getAttribute('data-qid'));
+          var ci = parseInt(e.target.getAttribute('data-ci'));
+          for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === qid && questions[i].choices) {
+              questions[i].choices[ci] = e.target.value;
+              break;
+            }
+          }
+        }
+      });
+
+      document.getElementById('questions-container').addEventListener('change', function(e) {
+        if (e.target.classList.contains('q-type')) {
+          var id = parseInt(e.target.getAttribute('data-id'));
+          for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === id) {
+              questions[i].type = e.target.value;
+              if (e.target.value === 'choice' && (!questions[i].choices || questions[i].choices.length < 2)) {
+                questions[i].choices = ['', ''];
+              }
+            }
+          }
+          render();
+        }
+        if (e.target.classList.contains('q-required')) {
+          var id = parseInt(e.target.getAttribute('data-id'));
+          for (var i = 0; i < questions.length; i++) {
+            if (questions[i].id === id) questions[i].required = e.target.checked;
+          }
+        }
+      });
+
+      document.getElementById('btn-create').addEventListener('click', function() {
+        var title = document.getElementById('q-title').value.trim();
+        var desc = document.getElementById('q-description').value.trim();
+        var instructions = document.getElementById('q-instructions').value.trim();
+        var msgEl = document.getElementById('create-message');
+
+        if (!title) {
+          msgEl.innerHTML = '<div class="alert alert-error">กรุณากรอกชื่อแบบสอบถาม</div>';
+          msgEl.classList.remove('hidden');
+          return;
+        }
+        if (questions.length === 0) {
+          msgEl.innerHTML = '<div class="alert alert-error">กรุณาเพิ่มคำถามอย่างน้อย 1 ข้อ</div>';
+          msgEl.classList.remove('hidden');
+          return;
+        }
+        for (var i = 0; i < questions.length; i++) {
+          if (!questions[i].text.trim()) {
+            msgEl.innerHTML = '<div class="alert alert-error">กรุณากรอกข้อความคำถามให้ครบทุกข้อ</div>';
+            msgEl.classList.remove('hidden');
+            return;
+          }
+          if (questions[i].type === 'choice') {
+            var validChoices = (questions[i].choices || []).filter(function(c) { return c.trim(); });
+            if (validChoices.length < 2) {
+              msgEl.innerHTML = '<div class="alert alert-error">คำถามแบบเลือกต้องมีตัวเลือกอย่างน้อย 2 ข้อ</div>';
+              msgEl.classList.remove('hidden');
+              return;
+            }
+          }
+        }
+
+        // สร้าง code แบบสุ่ม
+        var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        var code = '';
+        for (var i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
+        var questionnaire = {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2,5),
+          teacherId: user.id,
+          teacherName: user.name,
+          title: title,
+          description: desc,
+          instructions: instructions,
+          questions: questions.map(function(q) {
+            var obj = { text: q.text, type: q.type, required: q.required !== false };
+            if (q.type === 'choice' && q.choices) {
+              obj.choices = q.choices.filter(function(c) { return c.trim(); });
+            }
+            return obj;
+          }),
+          code: code,
+          status: 'active',
+          createdAt: new Date().toISOString()
+        };
+
+        // บันทึกลง localStorage
+        var all = JSON.parse(localStorage.getItem('questionnaires') || '[]');
+        all.push(questionnaire);
+        localStorage.setItem('questionnaires', JSON.stringify(all));
+
+        // บันทึกลง Google Sheets
+        if (typeof SheetsAPI !== 'undefined' && SheetsAPI.isConfigured()) {
+          SheetsAPI.addQuestionnaire(questionnaire).then(function() {
+            console.log('บันทึกลง Google Sheets สำเร็จ');
+          }).catch(function(e) {
+            console.error('ไม่สามารถบันทึกลง Google Sheets:', e);
+          });
+        }
+
+        msgEl.innerHTML = '<div class="alert alert-success">สร้างแบบสอบถามสำเร็จ! รหัส: <strong>' + code + '</strong></div>';
+        msgEl.classList.remove('hidden');
+        setTimeout(function() { window.location.href = 'teacher.html'; }, 2000);
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

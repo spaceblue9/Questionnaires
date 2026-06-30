@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบผู้สอน - ระบบประเมินการสอน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="navbar"></div>
+
+  <div class="container" style="max-width: 420px; margin-top: 60px;">
+    <div class="card">
+      <div class="card-header text-center">เข้าสู่ระบบผู้สอน</div>
+      
+      <div id="login-form-container">
+        <div class="form-group">
+          <label>อีเมล</label>
+          <input type="email" id="login-email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่าน</label>
+          <input type="password" id="login-password" placeholder="••••••">
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="doLogin()">เข้าสู่ระบบ</button>
+        <div id="login-error" class="mt-2 hidden"></div>
+
+        <div class="text-center mt-2">
+          <span class="text-muted">ยังไม่มีบัญชี?</span>
+          <a href="#" onclick="showRegister()" style="text-decoration: none;">สมัครสมาชิก</a>
+        </div>
+      </div>
+
+      <div id="register-form-container" class="hidden">
+        <div class="form-group">
+          <label>ชื่อ</label>
+          <input type="text" id="reg-name" placeholder="ชื่อ-นามสกุล">
+        </div>
+        <div class="form-group">
+          <label>อีเมล</label>
+          <input type="email" id="reg-email" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่าน</label>
+          <input type="password" id="reg-password" placeholder="อย่างน้อย 6 ตัวอักษร">
+        </div>
+        <div class="form-group">
+          <label>ยืนยันตัวตน (CAPTCHA)</label>
+          <div id="captcha-question" style="background: #F3F4F6; padding: 12px; border-radius: 8px; margin-bottom: 8px; font-weight: 500;"></div>
+          <div class="flex gap-1">
+            <input type="number" id="captcha-answer" placeholder="คำตอบ" style="flex: 1;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="refreshCaptcha()">🔄</button>
+          </div>
+        </div>
+        <button class="btn btn-secondary" style="width: 100%;" onclick="doRegister()">สมัครสมาชิก</button>
+        <div id="reg-error" class="mt-2 hidden"></div>
+
+        <div class="text-center mt-2">
+          <span class="text-muted">มีบัญชีอยู่แล้ว?</span>
+          <a href="#" onclick="showLogin()" style="text-decoration: none;">เข้าสู่ระบบ</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/sheets.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    function showLogin() {
+      document.getElementById('login-form-container').classList.remove('hidden');
+      document.getElementById('register-form-container').classList.add('hidden');
+    }
+
+    function showRegister() {
+      document.getElementById('login-form-container').classList.add('hidden');
+      document.getElementById('register-form-container').classList.remove('hidden');
+      refreshCaptcha();
+    }
+
+    function refreshCaptcha() {
+      var text = Auth.generateCaptcha();
+      document.getElementById('captcha-question').textContent = text;
+      document.getElementById('captcha-answer').value = '';
+    }
+
+    async function doLogin() {
+      var email = document.getElementById('login-email').value.trim();
+      var password = document.getElementById('login-password').value;
+
+      if (!email || !password) {
+        App.showError('login-error', 'กรุณากรอกอีเมลและรหัสผ่าน');
+        return;
+      }
+
+      var result = await Auth.loginTeacher(email, password);
+      if (result.success) {
+        window.location.href = 'teacher.html';
+      } else {
+        App.showError('login-error', result.message);
+      }
+    }
+
+    async function doRegister() {
+      var name = document.getElementById('reg-name').value.trim();
+      var email = document.getElementById('reg-email').value.trim();
+      var password = document.getElementById('reg-password').value;
+      var captchaAnswer = document.getElementById('captcha-answer').value;
+
+      if (!name || !email || !password) {
+        App.showError('reg-error', 'กรุณากรอกข้อมูลให้ครบทุกช่อง');
+        return;
+      }
+      if (password.length < 6) {
+        App.showError('reg-error', 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+        return;
+      }
+      if (!Auth.verifyCaptcha(captchaAnswer)) {
+        App.showError('reg-error', 'คำตอบ CAPTCHA ไม่ถูกต้อง กรุณาลองใหม่');
+        refreshCaptcha();
+        return;
+      }
+
+      var result = await Auth.registerTeacher(name, email, password);
+      if (result.success) {
+        App.showSuccess('reg-error', 'สมัครสมาชิกสำเร็จ! รอผู้ดูแลระบบอนุมัติ ก่อนเข้าใช้งาน');
+        document.getElementById('reg-name').value = '';
+        document.getElementById('reg-email').value = '';
+        document.getElementById('reg-password').value = '';
+        document.getElementById('captcha-answer').value = '';
+        refreshCaptcha();
+        setTimeout(showLogin, 3000);
+      } else {
+        App.showError('reg-error', result.message);
+        refreshCaptcha();
+      }
+    }
+
+    document.getElementById('login-password').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') doLogin();
+    });
+    document.getElementById('captcha-answer').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') doRegister();
+    });
+  </script>
+</body>
+</html>
