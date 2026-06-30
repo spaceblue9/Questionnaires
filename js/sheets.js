@@ -1,6 +1,6 @@
 const SheetsAPI = {
   config: {
-    scriptUrl: 'https://script.google.com/macros/s/AKfycbyRwRjbFRz92idHrsROcU7YEX_rODNetqPNWgB4UiodsEIfOVOd5Of8Eeofd3kVvR9-Ow/exec',
+    scriptUrl: 'https://script.google.com/macros/s/AKfycbxlZJDB8KlhKlx_VsyIT-W4Hpt9jGPdb0t5BdHlkdbB2nj8j0iEbqEFgDcxV87qG6g2cw/exec',
     spreadsheetId: '',
     apiKey: ''
   },
